@@ -1,0 +1,88 @@
+input {
+    exec {
+        command => "mongo -u readonly -p 'xxx' dds-xxx.mongodb.rds.aliyuncs.com:3717/readio_server_production --quiet --eval 'db.system.profile.find({ts : {$gt: new Date(ISODate().getTime() - 1000*60), $lt: new Date()}})'"
+        interval => 60
+        type => "db.serverStatus"
+        add_field => { "dbserver" => "mongodb_log" }
+    }
+}
+
+filter {
+  if [dbserver] == "mongodb_log" {
+    split {
+      field => "message"
+    }
+
+    grok {
+      match => ["message", "readio_server_production"]
+      tag_on_failure => ["drop_lines"]
+      add_tag => ["db.log"]
+    }
+    grok {
+      match => ["message", "\.system\.profile"]
+      add_tag => ["drop_lines"]
+    }
+    grok {
+      match => ["message", "%{MONGO_QUERY:mongo_query}"]
+      add_tag => ["mongo_query"]
+    }
+
+    grok {
+      match => ["message", "\"ts\"%{SPACE}\:%{SPACE}ISODate\(\"%{DATA:happened_at}\"\),"]
+      add_tag => ["mongo_query"]
+    }
+
+    grok {
+      match => ["message", "\"millis\"%{SPACE}\:%{SPACE}%{NUMBER:spendtime:int},"]
+      add_tag => ["mongo_query"]
+    }
+
+    grok {
+      match => ["message", "\"client\"%{SPACE}\:%{SPACE}\"%{DATA:client_ip}\""]
+      add_tag => ["mongo_query"]
+    }
+
+    grok {
+      match => ["message", "\"keysExamined\"%{SPACE}\:%{SPACE}%{NUMBER:key_examined:int},"]
+    }
+
+    grok {
+      match => ["message", "\"command\"%{SPACE}\:%{SPACE}%{DATA:query},"]
+    }
+
+    grok {
+      match => ["message", "\"responseLength\"%{SPACE}\:%{SPACE}%{NUMBER:response_length:int},"]
+    }
+
+    grok {
+      match => ["message", "\"ns\"%{SPACE}\:%{SPACE}\"%{DATA:namespace}\","]
+    }
+
+    if "mongo_query" in [tags] {
+      mutate {
+        remove_tag => ["_grokparsefailure"]
+      }
+    }
+
+    if  "_grokparsefailure" in [tags] {
+      drop { }
+    }
+
+    if "drop_lines" in [tags] {
+      drop { }
+    }
+
+    mutate {
+      remove_field => ["command"]
+    }
+  }
+}
+
+output {
+  elasticsearch {
+    hosts => ["elasticsearch:9200"]
+    index => "db-log-%{+YYYY.MM.dd}"
+    user => "logstash_gelf"
+    password => "logstash_gelf"
+  }
+}
