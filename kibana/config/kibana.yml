@@ -1,0 +1,26 @@
+---
+## Default Kibana configuration from kibana-docker.
+## from https://github.com/elastic/kibana-docker/blob/master/build/kibana/config/kibana.yml
+#
+server.name: kibana
+server.host: "0"
+elasticsearch.url: http://elasticsearch:9200
+elasticsearch.username: "kibana"
+elasticsearch.password:  "gGdnWKn7InivtqyvBHGl"
+# xpack.monitoring.enabled: false
+# xpack.security.enabled: false
+
+# $ docker exec -it docker-elk_elasticsearch_1 bin/x-pack/setup-passwords auto
+# Initiating the setup of passwords for reserved users elastic,kibana,logstash_system.
+# The passwords will be randomly generated and printed to the console.
+# Please confirm that you would like to continue [y/N]y
+
+
+# Changed password for user kibana
+# PASSWORD kibana = gGdnWKn7InivtqyvBHGl
+
+# Changed password for user logstash_system
+# PASSWORD logstash_system = lTheRgrJduGQdyoeGaUb
+
+# Changed password for user elastic
+# PASSWORD elastic = DFLvl9xmEaeOxy9eujfC
