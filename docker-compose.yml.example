@@ -29,6 +29,7 @@ services:
       - elk
     depends_on:
       - elasticsearch
+    command: logstash -f /profile/
 
   kibana:
     build:
